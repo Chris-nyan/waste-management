@@ -104,3 +104,29 @@
 .uppy-Dashboard {
   @apply font-poppins;
 }
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    /* ... other existing variables ... */
+    --ring: 142.1 70.6% 45.3%;
+    --radius: 0.5rem;
+
+    /* --- Add these new variables for the Calendar --- */
+    --rdp-cell-size: 2.5rem; /* 40px */
+    --rdp-accent-color: hsl(142.1 70.6% 45.3%); /* Your primary green */
+    --rdp-background-color: hsl(142.1 70.6% 45.3% / 0.1); /* Light green for hover */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    /* ... other existing dark mode variables ... */
+    --ring: 142.1 70.6% 45.3%;
+
+    /* --- Add these new variables for the Calendar (Dark Mode) --- */
+    --rdp-accent-color: hsl(142.1 70.6% 45.3%);
+    --rdp-background-color: hsl(142.1 70.6% 45.3% / 0.2);
+  }
+}
