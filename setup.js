@@ -30,9 +30,9 @@ if (!fs.existsSync(serverDir)) {
     runCommand('npm install nodemon prisma --save-dev', serverDir);
     const gitignoreContent = `# Dependencies\n/node_modules\n\n# Environment variables\n.env\n`;
     writeFile(path.join(serverDir, '.gitignore'), gitignoreContent);
-    const envContent = `# Server Port\nPORT=3001\n\n# Database URL from Neon\nDATABASE_URL="<YOUR_NEON_DATABASE_URL_HERE>"\n`;
+    const envContent = `# Server Port\nPORT=3002\n\n# Database URL from Neon\nDATABASE_URL="<YOUR_NEON_DATABASE_URL_HERE>"\n`;
     writeFile(path.join(serverDir, '.env'), envContent);
-    const indexJsContent = `const express = require('express');\nconst dotenv = require('dotenv');\nconst cors = require('cors');\ndotenv.config();\nconst app = express();\napp.use(cors());\napp.use(express.json());\napp.get('/', (req, res) => res.send('Server is up and running!'));\nconst PORT = process.env.PORT || 3001;\napp.listen(PORT, () => console.log(\`Server is running on port \${PORT}\`));`;
+    const indexJsContent = `const express = require('express');\nconst dotenv = require('dotenv');\nconst cors = require('cors');\ndotenv.config();\nconst app = express();\napp.use(cors());\napp.use(express.json());\napp.get('/', (req, res) => res.send('Server is up and running!'));\nconst PORT = process.env.PORT || 3002;\napp.listen(PORT, () => console.log(\`Server is running on port \${PORT}\`));`;
     writeFile(path.join(serverDir, 'index.js'), indexJsContent);
     console.log("✅ Backend setup complete!");
     console.log("--------------------------------------------------------");

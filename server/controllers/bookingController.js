@@ -82,8 +82,38 @@ const getMyBookings = async (req, res) => {
         res.status(500).json({ message: "Internal server error." });
     }
 };
+/**
+ * @desc    Get the next upcoming booking for the logged-in user
+ * @route   GET /api/bookings/upcoming
+ * @access  Private
+ */
+const getUpcomingBooking = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const upcomingBooking = await prisma.booking.findFirst({
+            where: {
+                userId: userId,
+                status: { in: ['PENDING', 'CONFIRMED'] },
+                pickupTime: {
+                    gte: new Date(), // Greater than or equal to now
+                },
+            },
+            include: {
+                vendor: { select: { businessName: true } }
+            },
+            orderBy: {
+                pickupTime: 'asc', // Get the soonest one
+            },
+        });
+        res.status(200).json(upcomingBooking);
+    } catch (error) {
+        console.error("Error fetching upcoming booking:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+};
 
 module.exports = {
   createBooking,
   getMyBookings,
+  getUpcomingBooking,
 };

@@ -35,15 +35,12 @@ model VendorProfile {
   userId         String    @unique
   businessName   String
   phone          String
-  
-  // New structured address fields
   street         String
-  district       String // New field for district/sub-district
-  city           String // This will represent the Province/State
+  district       String
+  city           String
   zipCode        String
   country        String
-
-  operatingHours String    // Now a required field
+  operatingHours String
   isAvailable    Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -62,6 +59,19 @@ model Booking {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   notifications   Notification[]
+  // This new line links a booking to its waste entries
+  wasteEntries    WasteEntry[]
+}
+
+// --- NEW MODEL: This stores the details of the collected waste ---
+model WasteEntry {
+  id        String    @id @default(cuid())
+  booking   Booking   @relation(fields: [bookingId], references: [id])
+  bookingId String
+  wasteType WasteType // e.g., PLASTIC, ORGANIC
+  quantity  Float     // e.g., 5.5 (in kilograms)
+  unit      String    // e.g., "kg"
+  createdAt DateTime  @default(now())
 }
 
 model Notification {
@@ -86,4 +96,15 @@ enum BookingStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+}
+
+// --- NEW ENUM: This defines the types of waste we can track ---
+enum WasteType {
+  PLASTIC
+  PAPER
+  GLASS
+  ORGANIC
+  ELECTRONIC
+  METAL
+  OTHER
 }

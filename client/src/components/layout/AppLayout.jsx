@@ -29,7 +29,8 @@ const SidebarContent = ({ user, logout, isCollapsed, toggleSidebar }) => {
                 </button>
             </div>
             <nav className="flex-1 px-4 py-2 space-y-3">
-                <NavLink to="/user/dashboard" icon={LayoutGrid} active={pathname === '/user/dashboard'} isCollapsed={isCollapsed}>Find a Vendor</NavLink>
+                <NavLink to="/user/dashboard" icon={LayoutGrid} active={pathname === '/user/dashboard'} isCollapsed={isCollapsed}>Dashboard</NavLink>
+                <NavLink to="/user/find-vendors" icon={LayoutGrid} active={pathname === '/user/find-vendors'} isCollapsed={isCollapsed}>Find Vendors</NavLink>
                 <NavLink to="/user/mybookings" icon={Calendar} active={pathname === '/user/mybookings'} isCollapsed={isCollapsed}>My Bookings</NavLink>
             </nav>
             <div className="p-4">

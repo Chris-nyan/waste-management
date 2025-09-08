@@ -5,10 +5,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import useAuth from './hooks/use-auth';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
-import UserDashboardPage from './pages/user/DashboardPage';
+import FindVendorPage from './pages/user/FindVendorPage';
 // Corrected the import path to include the '/user' sub-directory
 import BookingsPage from './pages/user/BookingsPage'; 
-
+import DashboardPage from './pages/user/DashboardPage';
 // --- Placeholder Dashboards ---
 const VendorDashboard = () => (
   <div className="flex justify-center items-center h-screen">
@@ -56,7 +56,8 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardRedirect />} />
-          <Route path="/user/dashboard" element={<UserDashboardPage />} />
+          <Route path="/user/dashboard" element={<DashboardPage />} />
+          <Route path="/user/find-vendors" element={<FindVendorPage />} />
           <Route path="/user/mybookings" element={<BookingsPage />} /> 
           <Route path="/vendor/dashboard" element={<VendorDashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
