@@ -69,8 +69,75 @@ const getMyImpactStats = async (req, res) => {
         res.status(500).json({ message: "Internal server error." });
     }
 };
+/**
+ * @desc    Get waste collection stats for the logged-in vendor
+ * @route   GET /api/analytics/vendor-impact
+ * @access  Private (Vendor only)
+ */
+const getVendorImpactStats = async (req, res) => {
+    const vendorUserId = req.user.id;
+    const { startDate } = req.query;
+
+    try {
+        const vendorProfile = await prisma.vendorProfile.findUnique({ where: { userId: vendorUserId } });
+        if (!vendorProfile) {
+            return res.status(404).json({ message: "Vendor profile not found." });
+        }
+
+        const whereClause = {
+            vendorId: vendorProfile.id,
+            status: 'COMPLETED',
+        };
+
+        if (startDate && !isNaN(new Date(startDate))) {
+            whereClause.pickupTime = { gte: new Date(startDate) };
+        }
+
+        const completedBookings = await prisma.booking.findMany({
+            where: whereClause,
+            include: { wasteEntries: true },
+        });
+
+        const stats = {
+            totalWeight: 0,
+            breakdown: {},
+            timeline: [],
+        };
+
+        for (const booking of completedBookings) {
+            let bookingTotal = 0;
+            for (const entry of booking.wasteEntries) {
+                stats.totalWeight += entry.quantity;
+                bookingTotal += entry.quantity;
+                if (stats.breakdown[entry.wasteType]) {
+                    stats.breakdown[entry.wasteType] += entry.quantity;
+                } else {
+                    stats.breakdown[entry.wasteType] = entry.quantity;
+                }
+            }
+            stats.timeline.push({
+                date: booking.pickupTime,
+                totalWeight: bookingTotal
+            });
+        }
+        
+        stats.totalWeight = parseFloat(stats.totalWeight.toFixed(2));
+        for(const type in stats.breakdown) {
+            stats.breakdown[type] = parseFloat(stats.breakdown[type].toFixed(2));
+        }
+        stats.timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        res.status(200).json(stats);
+
+    } catch (error) {
+        console.error("Error fetching vendor impact stats:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+};
+
 
 module.exports = {
     getMyImpactStats,
+    getVendorImpactStats
 };
 

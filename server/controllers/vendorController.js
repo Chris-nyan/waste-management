@@ -1,22 +1,33 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-/**
- * @desc    Get all available vendors
- * @route   GET /api/vendors
- * @access  Private
- */
-const getVendors = async (req, res) => {
+// Controller to get all vendors, now with enhanced filtering capabilities
+const getAllVendors = async (req, res) => {
+  // 1. Get all possible geo-location filters from the query parameters
+  const { country, city, district } = req.query;
+
   try {
-    // We find all users with the role 'VENDOR'
-    // Then we include their associated vendorProfile to get the business details.
-    const vendors = await prisma.user.findMany({
-      where: {
-        role: 'VENDOR',
-        vendorProfile: {
-          isAvailable: true, // Only fetch vendors who are currently available
-        },
+    // 2. Build a dynamic query based on the filters provided
+    const whereClause = {
+      role: 'VENDOR',
+      vendorProfile: {
+        isAvailable: true, // Always ensure we only show available vendors
       },
+    };
+
+    // Dynamically add filters to the query if they exist
+    if (country) {
+      whereClause.vendorProfile.country = country;
+    }
+    if (city) { // 'city' in our schema represents the province/state
+      whereClause.vendorProfile.city = city;
+    }
+    if (district) {
+      whereClause.vendorProfile.district = district;
+    }
+
+    const vendors = await prisma.user.findMany({
+      where: whereClause, // Use the dynamic where clause
       select: {
         id: true,
         name: true,
@@ -32,6 +43,7 @@ const getVendors = async (req, res) => {
             zipCode: true,
             country: true,
             operatingHours: true,
+            isAvailable: true,
           },
         },
       },
@@ -45,5 +57,6 @@ const getVendors = async (req, res) => {
 };
 
 module.exports = {
-  getVendors,
+  getAllVendors,
 };
+

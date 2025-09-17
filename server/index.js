@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes.js');
 const vendorRoutes = require('./routes/vendorRoutes.js');
 const bookingRoutes = require('./routes/bookingRoutes.js');
 const analyticsRoutes = require('./routes/analyticsRoutes.js');
+const invitationRoutes = require('./routes/invitationRoutes.js');
+const wasteEntryRoutes = require('./routes/wasteEntryRoutes.js');
 
 // Load environment variables
 dotenv.config();
@@ -15,12 +17,9 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 // --- Middleware ---
-// ✅ CORS fix
+// ✅ Corrected CORS configuration
 app.use(cors({
-  origin: "http://localhost:5173",   // adjust to your frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT'], // Added 'PATCH' to the list of allowed methods
 }));
 
 app.use(express.json());
@@ -30,6 +29,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vendors', vendorRoutes); 
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/invitations', invitationRoutes);
+app.use('/api/waste-entries', wasteEntryRoutes);
 
 // A simple test route to confirm the server is running
 app.get('/', (req, res) => {
@@ -39,3 +40,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+

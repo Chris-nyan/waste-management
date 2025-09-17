@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
-import { MapPin, Clock, Phone, Search, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { MapPin, Clock, Phone, Search, Loader2, UserPlus, Globe } from 'lucide-react';
 import api from '@/lib/axios';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookingFlowModal } from '@/components/ui/BookingFlowModal';
+import { InviteVendorModal } from '@/components/ui/InviteVendorModal';
+import useAuth from '@/hooks/use-auth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchCountries, fetchStates, fetchCities } from "@/lib/location-api";
 
-// --- Helper Function for Operating Hours ---
+// --- Helper & Card Components ---
 const getVendorStatus = (operatingHoursJSON) => {
     if (!operatingHoursJSON) return { text: 'Hours not available', color: 'text-gray-400' };
     try {
@@ -31,7 +35,7 @@ const getVendorStatus = (operatingHoursJSON) => {
             const nextDayIndex = (currentDayIndex + i) % 7;
             const nextDayName = dayOrder[nextDayIndex];
             if (operatingHours[nextDayName]) {
-                 return { text: `Closed • Opens ${nextDayName.substring(0,3)} at ${operatingHours[nextDayName].start}`, color: 'text-red-500' };
+                return { text: `Closed • Opens ${nextDayName.substring(0, 3)} at ${operatingHours[nextDayName].start}`, color: 'text-red-500' };
             }
         }
         return { text: 'Closed', color: 'text-red-500' };
@@ -40,7 +44,6 @@ const getVendorStatus = (operatingHoursJSON) => {
     }
 };
 
-// --- Enhanced Vendor Card Component ---
 const VendorCard = ({ vendor, onSchedule }) => {
     const { vendorProfile } = vendor;
     const fullAddress = `${vendorProfile.street}, ${vendorProfile.district}, ${vendorProfile.city}, ${vendorProfile.country}`;
@@ -62,7 +65,7 @@ const VendorCard = ({ vendor, onSchedule }) => {
                 </div>
             </div>
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                 <Button onClick={() => onSchedule(vendor)} className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow hover:opacity-95">
+                <Button onClick={() => onSchedule(vendor)} className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow hover:opacity-95">
                     Schedule Pickup
                 </Button>
             </div>
@@ -70,25 +73,68 @@ const VendorCard = ({ vendor, onSchedule }) => {
     );
 };
 
-// --- Skeleton Loader ---
-const VendorCardSkeleton = () => ( <div className="bg-white rounded-lg border border-slate-200 p-6 animate-pulse"><div className="h-6 bg-slate-200 rounded w-3/4 mb-4"></div><div className="space-y-3"><div className="h-4 bg-slate-200 rounded w-full"></div><div className="h-4 bg-slate-200 rounded w-5/6"></div><div className="h-4 bg-slate-200 rounded w-1/2"></div></div><div className="h-10 bg-slate-200 rounded w-full mt-6"></div></div>);
+const VendorCardSkeleton = () => (<div className="bg-white rounded-lg border border-slate-200 p-6 animate-pulse"><div className="h-6 bg-slate-200 rounded w-3/4 mb-4"></div><div className="space-y-3"><div className="h-4 bg-slate-200 rounded w-full"></div><div className="h-4 bg-slate-200 rounded w-5/6"></div><div className="h-4 bg-slate-200 rounded w-1/2"></div></div><div className="h-10 bg-slate-200 rounded w-full mt-6"></div></div>);
 
-// --- Main Dashboard Page Component ---
+
 const FindVendorPage = () => {
+    const { user } = useAuth();
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
-    
-    // State for managing the booking modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [countries, setCountries] = useState([]);
+    const [states, setStates] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState("");
+    const [selectedState, setSelectedState] = useState("");
+    const [selectedCity, setSelectedCity] = useState("");
+    const [isStateLoading, setIsStateLoading] = useState(false);
+    const [isCityLoading, setIsCityLoading] = useState(false);
+
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
+
+    useEffect(() => {
+        fetchCountries().then(setCountries);
+    }, []);
+
+    useEffect(() => {
+        if (selectedCountry) {
+            setIsStateLoading(true);
+            setSelectedState("");
+            setSelectedCity("");
+            fetchStates(selectedCountry).then(setStates).finally(() => setIsStateLoading(false));
+        } else {
+            setStates([]);
+            setCities([]);
+        }
+    }, [selectedCountry]);
+
+    useEffect(() => {
+        if (selectedCountry && selectedState) {
+            setIsCityLoading(true);
+            setSelectedCity("");
+            fetchCities(selectedCountry, selectedState).then(setCities).finally(() => setIsCityLoading(false));
+        } else {
+            setCities([]);
+        }
+    }, [selectedState]);
 
     useEffect(() => {
         const fetchVendors = async () => {
             try {
                 setLoading(true);
-                const response = await api.get('/vendors');
+                const params = {
+                    country: selectedCountry,
+                    city: selectedState,
+                    district: selectedCity,
+                };
+                // Remove empty params to avoid sending them to the API
+                Object.keys(params).forEach(key => !params[key] && delete params[key]);
+
+                const response = await api.get('/vendors', { params });
                 setVendors(response.data);
                 setError(null);
             } catch (err) {
@@ -98,22 +144,29 @@ const FindVendorPage = () => {
             }
         };
         fetchVendors();
-    }, []);
+    }, [selectedCountry, selectedState, selectedCity]);
 
     const handleScheduleClick = (vendor) => {
         setSelectedVendor(vendor);
-        setIsModalOpen(true);
+        setIsBookingModalOpen(true);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        // A short delay to allow the closing animation to finish before clearing the vendor
+    const handleCloseBookingModal = () => {
+        setIsBookingModalOpen(false);
         setTimeout(() => setSelectedVendor(null), 200);
     };
+    const handleClearFilters = () => {
+        setSearchQuery("");
+        setSelectedCountry("");
+        setSelectedState("");
+        setSelectedCity("");
+        // The useEffect hooks will automatically handle resetting the dropdowns
+    };
 
-    const filteredVendors = vendors.filter(vendor => 
-        vendor.vendorProfile.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.vendorProfile.city.toLowerCase().includes(searchQuery.toLowerCase())
+    // Frontend text search now filters the data returned from the API
+    const filteredVendors = vendors.filter(vendor =>
+        searchQuery === "" ||
+        vendor.vendorProfile.businessName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -123,10 +176,33 @@ const FindVendorPage = () => {
                     <h2 className="text-3xl font-bold text-gray-800">Find a Vendor</h2>
                     <p className="text-slate-500 mt-1">Browse and schedule pickups from local vendors.</p>
                 </div>
-                <div className="relative w-full md:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"/>
-                    <Input type="text" placeholder="Search by name or city..." className="pl-10 bg-white" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+                <Button onClick={() => setIsInviteModalOpen(true)} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow hover:opacity-95 shrink-0">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Invite Vendor
+                </Button>
+
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 p-4 bg-white rounded-lg border shadow-sm">
+                <div className="relative md:col-span-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Input type="text" placeholder="Search by business name..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
+                <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                    <SelectTrigger><div className="flex items-center gap-2"><Globe className="h-4 w-4" /><span>{selectedCountry || "Country"}</span></div></SelectTrigger>
+                    <SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={selectedState} onValueChange={setSelectedState} disabled={!selectedCountry || isStateLoading}>
+                    <SelectTrigger>{isStateLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (selectedState || "Province / State")}</SelectTrigger>
+                    <SelectContent>{states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={selectedCity} onValueChange={setSelectedCity} disabled={!selectedState || isCityLoading}>
+                    <SelectTrigger>{isCityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (selectedCity || "District / City")}</SelectTrigger>
+                    <SelectContent>{cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+                <Button variant="outline" onClick={handleClearFilters} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow hover:opacity-95 shrink-0">Clear Filters</Button>
+
             </div>
 
             {loading ? (
@@ -136,9 +212,9 @@ const FindVendorPage = () => {
             ) : error ? (
                 <div className="text-center py-16 bg-white border rounded-lg"><p className="text-red-500 font-medium">{error}</p></div>
             ) : filteredVendors.length === 0 ? (
-                 <div className="text-center py-16 bg-white border rounded-lg">
-                    <p className="text-slate-600 font-medium">{searchQuery ? "No vendors match your search." : "No vendors are currently available."}</p>
-                    {searchQuery && <Button variant="link" onClick={() => setSearchQuery("")}>Clear search</Button>}
+                <div className="text-center py-16 bg-white border rounded-lg">
+                    <p className="text-slate-600 font-medium">No vendors match your search or filter criteria.</p>
+                    {(searchQuery || selectedCountry) && <Button variant="link" onClick={() => { setSearchQuery(""); setSelectedCountry(""); setSelectedState(""); setSelectedCity(""); }}>Clear Filters</Button>}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -147,8 +223,9 @@ const FindVendorPage = () => {
                     ))}
                 </div>
             )}
-            
-            <BookingFlowModal vendor={selectedVendor} isOpen={isModalOpen} onClose={handleCloseModal} />
+
+            <BookingFlowModal vendor={selectedVendor} isOpen={isBookingModalOpen} onClose={handleCloseBookingModal} />
+            <InviteVendorModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
         </AppLayout>
     );
 };

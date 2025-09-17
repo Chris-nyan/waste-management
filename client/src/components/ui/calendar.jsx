@@ -17,13 +17,30 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  disabled, // Destructure the disabled prop
   ...props
 }) {
   const defaultClassNames = getDefaultClassNames()
 
+  // This logic now automatically disables past dates by default,
+  // and merges any other disabled rules (like a vendor's off-days)
+  // that are passed into the component.
+  const combinedDisabled = React.useMemo(() => {
+    const pastDatesMatcher = { before: new Date(new Date().setHours(0, 0, 0, 0)) };
+    if (!disabled) {
+      return pastDatesMatcher;
+    }
+    if (Array.isArray(disabled)) {
+      return [pastDatesMatcher, ...disabled];
+    }
+    return [pastDatesMatcher, disabled];
+  }, [disabled]);
+
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      disabled={combinedDisabled} // Use the new combined disabled dates logic
       className={cn(
         "bg-background group/calendar p-6 [--cell-size:3rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
@@ -97,7 +114,7 @@ function Calendar({
           "text-muted-foreground aria-selected:text-muted-foreground",
           defaultClassNames.outside
         ),
-        disabled: cn("text-muted-foreground opacity-50", defaultClassNames.disabled),
+        disabled: cn("text-muted-foreground/60 opacity-50 cursor-not-allowed", defaultClassNames.disabled),
         hidden: cn("invisible", defaultClassNames.hidden),
         ...classNames,
       }}
@@ -166,8 +183,16 @@ function CalendarDayButton({
         defaultClassNames.day,
         className
       )}
-      {...props} />
+      {...props} 
+    >
+      {/* --- This section adds the day number and the event dot --- */}
+      {props.children}
+      {modifiers.event && (
+        <div className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      )}
+    </Button>
   );
 }
 
 export { Calendar, CalendarDayButton }
+

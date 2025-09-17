@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
-import { cn } from "@/lib/utils" // 1. Add the missing import
+import { cn } from "@/lib/utils"
 
 const ChartContainer = ({
   className,
@@ -20,7 +20,7 @@ const ChartContainer = ({
   ...props
 }) => (
   <div
-    className={cn( // 2. This will now work correctly
+    className={cn(
       "relative flex h-full min-h-[200px] w-full items-center justify-center",
       className
     )}

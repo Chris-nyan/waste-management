@@ -19,6 +19,7 @@ model User {
   vendorProfile VendorProfile?
   bookings      Booking[]
   notifications Notification[]
+  sentInvitations   VendorInvitation[] // Relation to invitations sent by this user
 }
 
 model UserProfile {
@@ -47,6 +48,20 @@ model VendorProfile {
   bookings       Booking[]
 }
 
+// --- MODEL for tracking vendor invitations ---
+model VendorInvitation {
+  id        String           @id @default(cuid())
+  email     String           @unique // The email of the vendor being invited
+  token     String           @unique // The unique token for the registration link
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime         // The date and time when the token will expire
+  
+  invitedByUser   User   @relation(fields: [invitedByUserId], references: [id])
+  invitedByUserId String
+  
+  createdAt DateTime @default(now())
+}
+
 model Booking {
   id              String         @id @default(cuid())
   user            User           @relation(fields: [userId], references: [id])
@@ -59,8 +74,10 @@ model Booking {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   notifications   Notification[]
+  wasteTypes      WasteType[]
   // This new line links a booking to its waste entries
   wasteEntries    WasteEntry[]
+  contactPhone    String         @default("")
 }
 
 // --- NEW MODEL: This stores the details of the collected waste ---
@@ -107,4 +124,11 @@ enum WasteType {
   ELECTRONIC
   METAL
   OTHER
+}
+
+// --- NEW ENUM for invitation status ---
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
 }
